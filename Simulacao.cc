@@ -69,6 +69,16 @@ int main (int argc, char* argv[]) {
 		csmaDevices[i] = csma[i].Install (csmaNodes[i]);
 	}
 
+	NodeContainer wifiStaNodes[2];
+	NodeContainer wifiApNode[2];
+
+	for (int i = 0; i < 2; i++ ) {
+		// Adicionando nos de borda (1 por rede)
+		wifiApNode[i] = p2pNodes.Get (i+4);
+		// Adicionando nos restantes
+		wifiStaNodes[i].Create (9);
+	}
+
 	// TODO: resto do projeto XD
 
 
