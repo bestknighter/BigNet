@@ -1,7 +1,5 @@
 #include "ns3/core-module.h"
-#include "ns3/simulator-module.h"
-#include "ns3/node-module.h"
-#include "ns3/helper-module.h"
+#include "ns3/csma-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/network-module.h"
@@ -43,7 +41,11 @@ int main (int argc, char* argv[]) {
 	pointToPoint.SetChannelAttribute ("Delay", StringValue ("500us"));
 
 	NetDeviceContainer p2pDevices;
-	p2pDevices = pointToPoint.Install (p2pNodes);
+	p2pDevices = pointToPoint.Install (p2pNodes.Get (0), p2pNodes.Get (1));
+    p2pDevices = pointToPoint.Install (p2pNodes.Get (1), p2pNodes.Get (2));
+    p2pDevices = pointToPoint.Install (p2pNodes.Get (2), p2pNodes.Get (3));
+    p2pDevices = pointToPoint.Install (p2pNodes.Get (3), p2pNodes.Get (4));
+    p2pDevices = pointToPoint.Install (p2pNodes.Get (4), p2pNodes.Get (5));
 
 	// Fazendo todos os nos de LAN Ethernet
 	NodeContainer csmaNodes[4];
@@ -96,20 +98,20 @@ int main (int argc, char* argv[]) {
 
 		phy[i].SetChannel (channel[i].Create ());
 
-		wifi[i] = WifiHelper::Default ();
+		wifi[i] = WifiHelper();
 		wifi[i].SetRemoteStationManager ("ns3::AarfWifiManager");
 
 		mac[i] = NqosWifiMacHelper::Default ();
 
 		ssid[i] = Ssid ("ns-3-ssid");
-		mac[i].SetType ("ns3::NqstaWifiMac",
+		mac[i].SetType ("ns3::StaWifiMac",
 			"Ssid", SsidValue (ssid[i]),
 			"ActiveProbing", BooleanValue (false)
 		);
 
 		staDevices[i] = wifi[i].Install (phy[i], mac[i], wifiStaNodes[i]);
 
-		mac[i].SetType ("ns3::NqapWifiMac",
+		mac[i].SetType ("ns3::ApWifiMac",
 			"Ssid", SsidValue (ssid[i]),
 			"BeaconGeneration", BooleanValue (true),
 			"BeaconInterval", TimeValue (Seconds (2.5))
@@ -201,7 +203,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	for (int i = 0; i < 2; i++) {
-		for (int n = 1; n < 10; n++) {
+		for (int n = 1; n < 9; n++) {
 			clientApps[x] = echoClient.Install (wifiStaNodes[i].Get (n));
 			clientApps[x].Start (Seconds (2.0));
 			clientApps[x++].Stop (Seconds (10.0));
