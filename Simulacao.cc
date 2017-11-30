@@ -20,6 +20,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("simulacao");
 
 int main (int argc, char* argv[]) {
+    Ptr<UniformRandomVariable> prng = CreateObject<UniformRandomVariable> ();
 	bool verbose = true;
 
 	CommandLine cmd;
@@ -181,12 +182,11 @@ int main (int argc, char* argv[]) {
 
 	ApplicationContainer serverApps = echoServer.Install (csmaNodes[3].Get (0));
 	serverApps.Start (Seconds (1.0));
-	serverApps.Stop (Seconds (10.0));
+	serverApps.Stop (Seconds (123.0));
 
 	UdpEchoClientHelper echoClient (csmaInterfaces[3].GetAddress (0), 9);
-	echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-	echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.)));
 	echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+    echoClient.SetAttribute ("MaxPackets", UintegerValue (8));
 
 	ApplicationContainer clientApps[57];
 	int x = 0;
@@ -196,23 +196,25 @@ int main (int argc, char* argv[]) {
 				continue;
 			}
 
+	        echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (csmaNodes[i].Get (n));
-			clientApps[x].Start (Seconds (2.0));
-			clientApps[x++].Stop (Seconds (10.0));
+			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
+			clientApps[x++].Stop (Seconds (122.0));
 		}
 	}
 
 	for (int i = 0; i < 2; i++) {
 		for (int n = 1; n < 9; n++) {
+	        echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (wifiStaNodes[i].Get (n));
-			clientApps[x].Start (Seconds (2.0));
-			clientApps[x++].Stop (Seconds (10.0));
+			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
+			clientApps[x++].Stop (Seconds (122.0));
 		}
 	}
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
-	Simulator::Stop (Seconds (10.0));
+	Simulator::Stop (Seconds (124.0));
 
 	// Dados para analise no Wireshark sao tudo que passar pela rede P2P e pelos nos de borda
 	pointToPoint.EnablePcapAll ("simulacao");
