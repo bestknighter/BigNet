@@ -20,7 +20,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("simulacao");
 
 int main (int argc, char* argv[]) {
-    Ptr<UniformRandomVariable> prng = CreateObject<UniformRandomVariable> ();
+	Ptr<UniformRandomVariable> prng = CreateObject<UniformRandomVariable> ();
 	bool verbose = true;
 
 	CommandLine cmd;
@@ -43,10 +43,10 @@ int main (int argc, char* argv[]) {
 
 	NetDeviceContainer p2pDevices;
 	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (0), p2pNodes.Get (1)));
-    p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (1), p2pNodes.Get (2)));
-    p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (2), p2pNodes.Get (3)));
-    p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (3), p2pNodes.Get (4)));
-    p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (4), p2pNodes.Get (5)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (1), p2pNodes.Get (2)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (2), p2pNodes.Get (3)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (3), p2pNodes.Get (4)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (4), p2pNodes.Get (5)));
 
 	// Fazendo todos os nos de LAN Ethernet
 	NodeContainer csmaNodes[4];
@@ -140,15 +140,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	InternetStackHelper stack;
-    stack.InstallAll ();
-//	stack.Install (csmaNodes[0]);
-//	stack.Install (csmaNodes[1]);
-//	stack.Install (csmaNodes[2]);
-//	stack.Install (csmaNodes[3]);
-//	stack.Install (wifiApNode[0]);
-//	stack.Install (wifiApNode[1]);
-//	stack.Install (wifiStaNodes[0]);
-//	stack.Install (wifiStaNodes[1]);
+	stack.InstallAll ();
 
 	// Configurando IPv4
 	Ipv4AddressHelper address;
@@ -187,7 +179,7 @@ int main (int argc, char* argv[]) {
 
 	UdpEchoClientHelper echoClient (csmaInterfaces[3].GetAddress (0), 9);
 	echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-    echoClient.SetAttribute ("MaxPackets", UintegerValue (8));
+	echoClient.SetAttribute ("MaxPackets", UintegerValue (8));
 
 	ApplicationContainer clientApps[57];
 	int x = 0;
@@ -197,7 +189,7 @@ int main (int argc, char* argv[]) {
 				continue;
 			}
 
-	        echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (csmaNodes[i].Get (n));
 			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
 			clientApps[x++].Stop (Seconds (122.0));
@@ -206,7 +198,7 @@ int main (int argc, char* argv[]) {
 
 	for (int i = 0; i < 2; i++) {
 		for (int n = 0; n < 9; n++) {
-	        echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (wifiStaNodes[i].Get (n));
 			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
 			clientApps[x++].Stop (Seconds (122.0));
@@ -218,7 +210,7 @@ int main (int argc, char* argv[]) {
 	Simulator::Stop (Seconds (124.0));
 
 	// Dados para analise no Wireshark sao tudo que passar pela rede P2P e pelos nos de borda
-	pointToPoint.EnablePcapAll ("simulacao");
+	pointToPoint.EnablePcapAll ("P2P");
 	phy[0].EnablePcap ("WiFi0", apDevices[0].Get (0));
 	phy[1].EnablePcap ("WiFi1", apDevices[1].Get (0));
 	csma[0].EnablePcap ("Ethernet0", csmaDevices[0].Get (0), true);
