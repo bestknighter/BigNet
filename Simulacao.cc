@@ -219,12 +219,12 @@ int main (int argc, char* argv[]) {
 
 	// Dados para analise no Wireshark sao tudo que passar pela rede P2P e pelos nos de borda
 	pointToPoint.EnablePcapAll ("simulacao");
-	phy[0].EnablePcap ("simulacao", apDevices[0].Get (0));
-	phy[1].EnablePcap ("simulacao", apDevices[1].Get (0));
-	csma[0].EnablePcap ("simulacao", csmaDevices[0].Get (0), true);
-	csma[1].EnablePcap ("simulacao", csmaDevices[1].Get (0), true);
-	csma[2].EnablePcap ("simulacao", csmaDevices[2].Get (0), true);
-	csma[3].EnablePcap ("simulacao", csmaDevices[3].Get (0), true);
+	phy[0].EnablePcap ("WiFi0", apDevices[0].Get (0));
+	phy[1].EnablePcap ("WiFi1", apDevices[1].Get (0));
+	csma[0].EnablePcap ("Ethernet0", csmaDevices[0].Get (0), true);
+	csma[1].EnablePcap ("Ethernet1", csmaDevices[1].Get (0), true);
+	csma[2].EnablePcap ("Ethernet2", csmaDevices[2].Get (0), true);
+	csma[3].EnablePcap ("Ethernet3", csmaDevices[3].Get (0), true);
 
 	Simulator::Run ();
 	Simulator::Destroy ();
