@@ -1,7 +1,5 @@
 #include "ns3/core-module.h"
-#include "ns3/simulator-module.h"
-#include "ns3/node-module.h"
-#include "ns3/helper-module.h"
+#include "ns3/csma-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/network-module.h"
@@ -22,6 +20,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("simulacao");
 
 int main (int argc, char* argv[]) {
+	Ptr<UniformRandomVariable> prng = CreateObject<UniformRandomVariable> ();
 	bool verbose = true;
 
 	CommandLine cmd;
@@ -43,7 +42,11 @@ int main (int argc, char* argv[]) {
 	pointToPoint.SetChannelAttribute ("Delay", StringValue ("500us"));
 
 	NetDeviceContainer p2pDevices;
-	p2pDevices = pointToPoint.Install (p2pNodes);
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (0), p2pNodes.Get (1)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (1), p2pNodes.Get (2)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (2), p2pNodes.Get (3)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (3), p2pNodes.Get (4)));
+	p2pDevices.Add (pointToPoint.Install (p2pNodes.Get (4), p2pNodes.Get (5)));
 
 	// Fazendo todos os nos de LAN Ethernet
 	NodeContainer csmaNodes[4];
@@ -67,7 +70,7 @@ int main (int argc, char* argv[]) {
 
 	NetDeviceContainer csmaDevices[4];
 	for (int i = 0; i < 4; i++ ) {
-		csmaDevices[i] = csma[i].Install (csmaNodes[i]);
+		csmaDevices[i].Add (csma[i].Install (csmaNodes[i]));
 	}
 
 	// 2 LANs Wifi
@@ -76,7 +79,7 @@ int main (int argc, char* argv[]) {
 
 	for (int i = 0; i < 2; i++ ) {
 		// Adicionando nos de borda (1 por rede)
-		wifiApNode[i] = p2pNodes.Get (i+4);
+		wifiApNode[i].Add (p2pNodes.Get (i+4));
 		// Adicionando nos restantes
 		wifiStaNodes[i].Create (9);
 	}
@@ -96,26 +99,26 @@ int main (int argc, char* argv[]) {
 
 		phy[i].SetChannel (channel[i].Create ());
 
-		wifi[i] = WifiHelper::Default ();
+		wifi[i] = WifiHelper();
 		wifi[i].SetRemoteStationManager ("ns3::AarfWifiManager");
 
 		mac[i] = NqosWifiMacHelper::Default ();
 
 		ssid[i] = Ssid ("ns-3-ssid");
-		mac[i].SetType ("ns3::NqstaWifiMac",
+		mac[i].SetType ("ns3::StaWifiMac",
 			"Ssid", SsidValue (ssid[i]),
 			"ActiveProbing", BooleanValue (false)
 		);
 
-		staDevices[i] = wifi[i].Install (phy[i], mac[i], wifiStaNodes[i]);
+		staDevices[i].Add (wifi[i].Install (phy[i], mac[i], wifiStaNodes[i]));
 
-		mac[i].SetType ("ns3::NqapWifiMac",
+		mac[i].SetType ("ns3::ApWifiMac",
 			"Ssid", SsidValue (ssid[i]),
 			"BeaconGeneration", BooleanValue (true),
 			"BeaconInterval", TimeValue (Seconds (2.5))
 		);
 
-		apDevices[i] = wifi[i].Install (phy[i], mac[i], wifiApNode[i]);
+		apDevices[i].Add (wifi[i].Install (phy[i], mac[i], wifiApNode[i]));
 
 		mobility[i].SetPositionAllocator ("ns3::GridPositionAllocator",
 			"MinX", DoubleValue (0.0),
@@ -137,14 +140,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	InternetStackHelper stack;
-	stack.Install (csmaNodes[0]);
-	stack.Install (csmaNodes[1]);
-	stack.Install (csmaNodes[2]);
-	stack.Install (csmaNodes[3]);
-	stack.Install (wifiApNode[0]);
-	stack.Install (wifiApNode[1]);
-	stack.Install (wifiStaNodes[0]);
-	stack.Install (wifiStaNodes[1]);
+	stack.InstallAll ();
 
 	// Configurando IPv4
 	Ipv4AddressHelper address;
@@ -179,12 +175,11 @@ int main (int argc, char* argv[]) {
 
 	ApplicationContainer serverApps = echoServer.Install (csmaNodes[3].Get (0));
 	serverApps.Start (Seconds (1.0));
-	serverApps.Stop (Seconds (10.0));
+	serverApps.Stop (Seconds (123.0));
 
 	UdpEchoClientHelper echoClient (csmaInterfaces[3].GetAddress (0), 9);
-	echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-	echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.)));
 	echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+	echoClient.SetAttribute ("MaxPackets", UintegerValue (8));
 
 	ApplicationContainer clientApps[57];
 	int x = 0;
@@ -194,32 +189,34 @@ int main (int argc, char* argv[]) {
 				continue;
 			}
 
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (csmaNodes[i].Get (n));
-			clientApps[x].Start (Seconds (2.0));
-			clientApps[x++].Stop (Seconds (10.0));
+			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
+			clientApps[x++].Stop (Seconds (122.0));
 		}
 	}
 
 	for (int i = 0; i < 2; i++) {
-		for (int n = 1; n < 10; n++) {
+		for (int n = 0; n < 9; n++) {
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (prng->GetValue(10.0, 90.0))));
 			clientApps[x] = echoClient.Install (wifiStaNodes[i].Get (n));
-			clientApps[x].Start (Seconds (2.0));
-			clientApps[x++].Stop (Seconds (10.0));
+			clientApps[x].Start (Seconds (prng->GetValue(1.5, 4.5)));
+			clientApps[x++].Stop (Seconds (122.0));
 		}
 	}
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
-	Simulator::Stop (Seconds (10.0));
+	Simulator::Stop (Seconds (124.0));
 
 	// Dados para analise no Wireshark sao tudo que passar pela rede P2P e pelos nos de borda
-	pointToPoint.EnablePcapAll ("simulacao");
-	phy[0].EnablePcap ("simulacao", apDevices[0].Get (0));
-	phy[1].EnablePcap ("simulacao", apDevices[1].Get (0));
-	csma[0].EnablePcap ("simulacao", csmaDevices[0].Get (0), true);
-	csma[1].EnablePcap ("simulacao", csmaDevices[1].Get (0), true);
-	csma[2].EnablePcap ("simulacao", csmaDevices[2].Get (0), true);
-	csma[3].EnablePcap ("simulacao", csmaDevices[3].Get (0), true);
+	pointToPoint.EnablePcapAll ("P2P");
+	phy[0].EnablePcap ("WiFi0", apDevices[0].Get (0));
+	phy[1].EnablePcap ("WiFi1", apDevices[1].Get (0));
+	csma[0].EnablePcap ("Ethernet0", csmaDevices[0].Get (0), true);
+	csma[1].EnablePcap ("Ethernet1", csmaDevices[1].Get (0), true);
+	csma[2].EnablePcap ("Ethernet2", csmaDevices[2].Get (0), true);
+	csma[3].EnablePcap ("Ethernet3", csmaDevices[3].Get (0), true);
 
 	Simulator::Run ();
 	Simulator::Destroy ();
