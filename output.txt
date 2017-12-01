@@ -1,0 +1,4 @@
+Waf: Entering directory `/home/bestknighter/Downloads/ns-allinone-3.27/ns-3.27/build'
+Waf: Leaving directory `/home/bestknighter/Downloads/ns-allinone-3.27/ns-3.27/build'
+Build commands will be stored in build/compile_commands.json
+'build' finished successfully (0.652s)
